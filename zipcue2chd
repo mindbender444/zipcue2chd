@@ -1,0 +1,59 @@
+#!/bin/sh
+
+#This script extracts the contents of one or more zip or 7z archive files to a temporary directory, runs chdman on the cue file inside the extracted directory to create a chd file, and moves the chd file to the user's home directory. The needed dependencies are unzip, 7z, and chdman.
+
+# Check if any archive file names were provided as command-line arguments
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 <filename1.zip|filename1.7z> [<filename2.zip|filename2.7z>] ..."
+    exit 1
+fi
+
+# Check if the necessary dependencies are installed
+if ! command -v unzip >/dev/null 2>&1 ; then
+    echo "Error: The 'unzip' utility is not installed."
+    exit 1
+fi
+
+if ! command -v 7z >/dev/null 2>&1 ; then
+    echo "Error: The '7z' utility is not installed."
+    exit 1
+fi
+
+if ! command -v chdman >/dev/null 2>&1 ; then
+    echo "Error: The 'chdman' utility is not installed."
+    exit 1
+fi
+
+# Create a temporary directory in the user's home directory
+TEMP_DIR="$HOME/tmpchd"
+mkdir -p "$TEMP_DIR"
+
+# Loop over each archive file and extract its contents to the temporary directory
+for ARCHIVE_FILE in "$@"
+do
+    # Get the last four characters of the archive file name
+    FILE_EXT=$(echo "$ARCHIVE_FILE" | rev | cut -d '.' -f 1 | rev)
+
+    # Extract the contents of the archive file to the temporary directory
+    if [ "$FILE_EXT" = "zip" ]; then
+        unzip "$ARCHIVE_FILE" -d "$TEMP_DIR"
+    elif [ "$FILE_EXT" = "7z" ]; then
+        7z x "$ARCHIVE_FILE" -o"$TEMP_DIR"
+    else
+        echo "Error: Invalid file format. Only zip and 7z files are supported."
+        exit 1
+    fi
+
+    # Find the cue file inside the extracted directory
+    CUE_FILE=$(find "$TEMP_DIR" -name "*.cue")
+
+    # Run chdman on the cue file to create a chd file
+    CHD_FILE="${CUE_FILE%.*}.chd"
+    chdman createcd -i "$CUE_FILE" -o "$CHD_FILE"
+
+    # Move the chd file to the user's home directory
+    mv "$CHD_FILE" "$HOME/"
+
+    # Remove the temporary directory
+    rm -r "$TEMP_DIR"
+done
