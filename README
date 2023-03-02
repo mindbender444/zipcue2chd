@@ -1,0 +1,1 @@
+This script extracts the contents of one or more zip or 7z archive files to a temporary directory, runs chdman on the cue file inside the extracted directory to create a chd file, and moves the chd file to the user's home directory. The needed dependencies are unzip, 7z, and chdman.
